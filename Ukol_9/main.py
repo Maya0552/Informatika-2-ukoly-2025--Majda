@@ -6,8 +6,16 @@ from storage import Storage
 # TODO: Implementovat dekorátor @log_action (zapsat do history.log)
 def log_action(func):
     def wrapper(*args, **kwargs):
-        # ... logika logování ...
-        return func(*args, **kwargs)
+        result = func(*args, **kwargs)
+
+        try:
+            with open("history.log", "a", encoding="utf-8") as f:
+                time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                f.write(f"[{time_str}] {func.__name__}\n")
+        except Exception:
+            pass  # logování nesmí rozbít program
+
+        return result
     return wrapper
 
 class InventoryManager:
@@ -18,19 +26,36 @@ class InventoryManager:
     @log_action
     def add_product(self, name: str, price: float, quantity: int):
         # TODO: Vytvořit produkt, přidat do self.products, uložit
+        product = Product(name, price, quantity)
+        self.products.append(product)
+        self.storage.save_products(self.products)
         print(f"Produkt {name} přidán.")
 
     def list_products(self):
         # TODO: Vypsat všechny produkty
-        pass
+        if not self.products:
+            print("Sklad je prázdný.")
+            return
+
+        for p in self.products:
+            print(p)
 
     def search_products(self, query: str):
         # TODO: Vyhledat produkty obsahující query v názvu
-        pass
+        found = [p for p in self.products if query.lower() in p.name.lower()]
+
+        if not found:
+            print("Nenalezen žádný produkt.")
+            return
+
+        for p in found:
+            print(p)
+
     
     def total_value(self):
-        # TODO: Spočítat celkovou hodnotu
-        pass
+        total = sum(p.price * p.quantity for p in self.products)
+        print(f"Celková hodnota skladu: {total:.2f} Kč")
+        return total
 
 def main():
     parser = argparse.ArgumentParser(description="Systém správy skladu")
